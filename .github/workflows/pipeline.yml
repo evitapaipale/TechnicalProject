@@ -1,0 +1,43 @@
+name: Playwright Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: "Enter SauceDemo username (optional override)"
+        required: false
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install dependencies
+        run: |
+          dotnet restore
+          dotnet build
+
+      - name: Install Playwright browsers
+        run: |
+          pwsh bin/Debug/net8.0/playwright.ps1 install
+
+      - name: Set credentials
+        run: echo "Credentials ready"
+        env:
+          USERNAME: ${{ github.event.inputs.username || secrets.SAUCE_USERNAME }}
+          PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
+
+      - name: Run tests
+        run: dotnet test
+        env:
+          USERNAME: ${{ github.event.inputs.username || secrets.SAUCE_USERNAME }}
+          PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
