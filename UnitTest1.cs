@@ -1,67 +1,69 @@
-﻿using Microsoft.Playwright;
-using Microsoft.Playwright.NUnit;
-using System.Text.RegularExpressions;
+using Microsoft.Playwright;
+using NUnit.Framework;
+using System.Threading.Tasks;
 
-namespace PlaywrightTests;
-
-[Parallelizable(ParallelScope.Self)]
-[TestFixture]
-public class ExampleTest : PageTest
+namespace SauceDemoTests
 {
-    [Test]
-    public async Task BuyTShirt()
+    public class BuyTshirtTests
     {
-        string username = "standard_user";
-        string password = "secret_sauce";
-        string firstname = "Evita";
-        string lastname = "Paipale";
-        string postcode = "LV5422";
+        private IPlaywright _playwright;
+        private IBrowser _browser;
+        private IPage _page;
 
-
-        await Page.GotoAsync("https://www.saucedemo.com/");
-
-        await Page.FillAsync("#user-name", username);
-        await Page.FillAsync("#password", password);
-        await Page.ClickAsync("#login-button");
-
-        // 3. Add T-shirt to cart (Sauce Labs Bolt T-Shirt)
-        await Page.ClickAsync("text=Sauce Labs Bolt T-Shirt");
-        await Page.ClickAsync("button:has-text('Add to cart')");
-
-        // 4. Go to cart
-        await Page.ClickAsync(".shopping_cart_link");
-
-        // Verify item is in cart
-        var itemVisible = await Page.IsVisibleAsync("text=Sauce Labs Bolt T-Shirt");
-        if (!itemVisible)
+        [SetUp]
+        public async Task Setup()
         {
-            throw new Exception("T-shirt not found in cart!");
+            _playwright = await Playwright.CreateAsync();
+            _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            {
+                Headless = true
+            });
+            _page = await _browser.NewPageAsync();
         }
 
-        // 5. Proceed to checkout
-        await Page.ClickAsync("#checkout");
-
-        // 6. Fill checkout info
-        await Page.FillAsync("#first-name", firstname);
-        await Page.FillAsync("#last-name", lastname);
-        await Page.FillAsync("#postal-code", postcode);
-
-        await Page.ClickAsync("#continue");
-
-        // 7. Finish purchase
-        await Page.ClickAsync("#finish");
-
-        // 8. Verify success message
-        var successText = await Page.InnerTextAsync(".complete-header");
-
-        if (successText.Contains("Thank you for your order"))
+        [Test]
+        public async Task BuyTshirt()
         {
-            Console.WriteLine("Test Passed: Order completed successfully.");
-        }
-        else
-        {
-            throw new Exception("Test Failed: Order not completed.");
+            // Credentials from environment variables
+            var username = Environment.GetEnvironmentVariable("USERNAME")
+                ?? throw new ArgumentNullException("USERNAME is not set");
+
+            var password = Environment.GetEnvironmentVariable("PASSWORD")
+                ?? throw new ArgumentNullException("PASSWORD is not set");
+
+            await _page.GotoAsync("https://www.saucedemo.com/");
+
+            // Login
+            await _page.FillAsync("#user-name", username);
+            await _page.FillAsync("#password", password);
+            await _page.ClickAsync("#login-button");
+
+            // Add T-shirt (Sauce Labs Bolt T-Shirt)
+            await _page.ClickAsync("text=Sauce Labs Bolt T-Shirt");
+            await _page.ClickAsync("button:has-text('Add to cart')");
+
+            // Go to cart
+            await _page.ClickAsync(".shopping_cart_link");
+
+            // Checkout
+            await _page.ClickAsync("button:has-text('Checkout')");
+
+            await _page.FillAsync("#first-name", "Evita");
+            await _page.FillAsync("#last-name", "Paipale");
+            await _page.FillAsync("#postal-code", "LV5422");
+
+            await _page.ClickAsync("input:has-text('Continue')");
+            await _page.ClickAsync("button:has-text('Finish')");
+
+            // Assertion
+            var confirmation = await _page.InnerTextAsync(".complete-header");
+            Assert.That(confirmation, Does.Contain("Thank you"));
         }
 
+        [TearDown]
+        public async Task TearDown()
+        {
+            await _browser.CloseAsync();
+        }
     }
 }
