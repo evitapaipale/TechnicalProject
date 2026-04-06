@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       username:
-        description: "Enter Username"
+        description: "Please enter Username"
         required: true
         type: string
 
       password:
-        description: "Enter Password"
+        description: "Please enter Password"
         required: true
         type: string
 
