@@ -4,8 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       username:
-        description: "Enter SauceDemo username (optional override)"
-        required: false
+        description: "Enter Username"
+        required: true
+        type: string
+
+      password:
+        description: "Enter Password"
+        required: true
         type: string
 
 jobs:
@@ -33,11 +38,11 @@ jobs:
       - name: Set credentials
         run: echo "Credentials ready"
         env:
-          USERNAME: ${{ github.event.inputs.username || secrets.SAUCE_USERNAME }}
-          PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
+          USERNAME: ${{ github.event.inputs.username }}
+          PASSWORD: ${{ github.event.inputs.password }}
 
       - name: Run tests
         run: dotnet test
         env:
-          USERNAME: ${{ github.event.inputs.username || secrets.SAUCE_USERNAME }}
-          PASSWORD: ${{ secrets.SAUCE_PASSWORD }}
+          USERNAME: ${{ github.event.inputs.username }}
+          PASSWORD: ${{ github.event.inputs.password }}
